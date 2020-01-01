@@ -1,0 +1,159 @@
+<!-- https://developers.google.com/chart/interactive/docs/gallery/ganttchart -->
+
+<html>
+  <head>
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
+    <script type="text/javascript">
+      google.charts.load('current', { packages: ['gantt'] });
+      google.charts.setOnLoadCallback(drawChart);
+
+      function daysToMilliseconds(days) {
+        return days * 24 * 60 * 60 * 1000;
+      }
+
+      function drawChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Task ID');
+        data.addColumn('string', 'Task Name');
+        data.addColumn('string', 'Resource');
+        data.addColumn('date', 'Start Date');
+        data.addColumn('date', 'End Date');
+        data.addColumn('number', 'Duration');
+        data.addColumn('number', 'Percent Complete');
+        data.addColumn('string', 'Dependencies');
+
+        data.addRows([
+          [
+            'PM',
+            'Project Start',
+            null,
+            new Date(2019, 10, 1),
+            null,
+            daysToMilliseconds(1),
+            100,
+            null
+          ],
+          [
+            'Planning',
+            'Exploring business cases',
+            null,
+            new Date(2019, 10, 2),
+            new Date(2019, 10, 10),
+            null,
+            100,
+            'PM'
+          ],
+          [
+            'Analysis',
+            'Exploring data sources',
+            'Design',
+            new Date(2019, 10, 8),
+            new Date(2019, 10, 15),
+            null,
+            100,
+            'PM, Planning'
+          ],
+          [
+            'Testing',
+            'Testing & Integration',
+            'Complete',
+            null,
+            new Date(2020, 0, 5),
+            daysToMilliseconds(5),
+            100,
+            'ML,Layout'
+          ],
+          [
+            'Doc',
+            'Documentation',
+            'Complete',
+            null,
+            new Date(2020, 0, 10),
+            daysToMilliseconds(5),
+            100,
+            'Testing'
+          ],
+          [
+            'Design',
+            'Platform Design',
+            'Implementation',
+            null,
+            new Date(2019, 10, 20),
+            daysToMilliseconds(5),
+            100,
+            'Planning,Analysis'
+          ],
+          [
+            'Complete',
+            'Hand in product prototype',
+            'complete',
+            null,
+            new Date(2020, 0, 15),
+            daysToMilliseconds(1),
+            100,
+            'Doc'
+          ],
+          [
+            'Implementation',
+            'Start Coding',
+            'Testing',
+            new Date(2019, 10, 25),
+            null,
+            daysToMilliseconds(1),
+            100,
+            'Design'
+          ],
+          [
+            'ML',
+            'Implementing ML Algorithm',
+            'Implementation',
+            null,
+            new Date(2019, 11, 8),
+            daysToMilliseconds(10),
+            100,
+            'Implementation'
+          ],
+          [
+            'Layout',
+            'Layout design & implementation',
+            'Implementation',
+            null,
+            new Date(2019, 11, 26),
+            daysToMilliseconds(10),
+            100,
+            'Implementation'
+          ]
+        ]);
+
+        var options = {
+          height: 500,
+          gantt: {
+            criticalPathEnabled: true,
+            criticalPathStyle: {
+              stroke: '#e64a19',
+              strokeWidth: 5
+            }
+          }
+        };
+
+        var chart = new google.visualization.Gantt(
+          document.getElementById('chart_div')
+        );
+
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <div align="center">
+      <h1>Wine Recommendation Platform Product Development Plan</h1>
+      <h2>By Raymond Lai</h2>
+      <h4><i>20-Jan-2020</i></h4>
+    </div>
+
+    <div id="chart_div"></div>
+  </body>
+</html>
