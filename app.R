@@ -37,6 +37,28 @@ winelist_variety <- winelist %>% group_by(variety) %>% mutate(v_count = n())
 winelist_variety <- winelist_variety %>% filter(v_count > 1000)
 sort(unique(winelist_variety$variety))
 
+##
+wine2_raw$title = as.character(wine2_raw$title)
+vintage_patt = "([1|2]{1}[0|9]{1}[0-9]{2})"
+y = str_extract_all(wine2_raw$title, pattern = vintage_patt, simplify = TRUE)
+y = as.data.frame(apply(y, 1:2, as.numeric))
+y[is.na(y)] = 0
+m = as.matrix(apply(y, 1, max))
+y = cbind(y, m)
+colnames(y) = c("a","s","d")
+y = y %>% mutate(f = ifelse(d>2019, a, d))
+y$f[y$f == 0] = NA
+wine2_raw$vintage = y$f
+
+wine.new = wine2_raw %>% filter(!is.na(vintage), vintage > 1990 & vintage < 2014)
+wine.new$region = str_c(wine.new$province, wine.new$country, sep = "_")
+top_region = wine.new %>% na.omit() %>% group_by(region) %>% filter(vintage >= 1990 & vintage < 2014) %>%
+  summarise(n=n()) %>% arrange(desc(n)) %>% top_n(20,n) %>% select(region)
+
+
+##
+
+
 value = 0
 
 server <- function(input, output) {
@@ -74,6 +96,7 @@ server <- function(input, output) {
     min_points <- winelist %>% filter(country == input$graph_country) %>% summarise(min_points = min(points)) %>% select(min_points)
     infoBox('Min Points', min_points, icon = icon('hand-point-down'), color = 'red') 
   }) 
+  
   
   ##
   
@@ -114,6 +137,26 @@ server <- function(input, output) {
   })
   
   ##
+  
+  ###
+  
+#  output$scatterByVintage <- renderPlotly({
+#    scatter_graph_Vintage <- winelist_variety %>% filter(vintage == input$graph_vintage) %>% arrange(desc(points)) %>% head(100) %>% 
+#      ggplot(aes(x = price, y = points)) + geom_point(aes(color = country), alpha = 0.4) +  xlab('Price per Bottle (in USD)')+ ylab('Points') + ggtitle('Price vs. Points: Selected Variety Top 100 Wines') + theme(
+#      plot.title=element_text(face='bold')) + theme(legend.position='none')
+#  })
+  
+  output$scatterByVintage <- renderPlotly({
+    scatter_graph_Vintage <- wine.new %>% na.omit() %>% group_by(region) %>% filter(vintage == input$graph_vintage, region %in% unname(unlist(top_region))) %>%
+      summarise(n=n(), avg_price = mean(price),avg_points = mean(points)) %>% 
+      arrange(desc(n)) %>% mutate(ratio= avg_price/avg_points, Co = cor(avg_price, avg_points)) %>%  
+      ggplot(aes(x=avg_points, y=avg_price)) + geom_point(aes(size = (n), color = region)) + xlim(c(86.5,90)) + ylim(c(20,100)) + geom_text(aes(label = region), size = 3, nudge_x = 0.0, nudge_y = 1) + scale_size_continuous(range=c(1, 20)) +
+        ylab('Average Prices (in USD)')+ xlab('Average Points') + ggtitle('Price vs. Points: Particular VINTAGE among Top 20 Regions') + 
+        theme(plot.title=element_text(face='bold')) + theme(legend.position='none')
+  })
+  
+  ###
+  
   
   
   output$scatterByCountry <- renderPlotly({
@@ -274,37 +317,55 @@ body <- dashboardBody(
                                     plotlyOutput("scatterByCountry")
                                   )
                           ),
-
-   ##
-                          tabPanel('By Variety',  
+                          tabPanel('By Vintage',  
             
-                              selectizeInput(
-                                "graph_variety",
-                                'Select a variety:', 
-                                choices = sort(unique(winelist_variety$variety)), 
-                                multiple = F
-                              ),
+                                  selectizeInput(
+                                    "graph_vintage",
+                                    'Select a year:', 
+                                    choices = sort(unique(wine.new$vintage)), 
+                                    multiple = F, 
+                                    selected = 2003
+                                  ),
             
-                              fluidRow(
-                                infoBoxOutput("maxVarPrice"),
-                                infoBoxOutput("maxVarPoints")
-                              ),
-                              fluidRow(
-                                infoBoxOutput("meanVarPrice"),
-                                infoBoxOutput("meanVarPoints")
-                              ), 
             
-                              fluidRow(
-                                infoBoxOutput("minVarPrice"),
-                                infoBoxOutput("minVarPoints")
-                              ), 
-            
-                              fluidRow(
-                                plotlyOutput("scatterByVariety")
-                              )
+                                  fluidRow(
+                                    plotlyOutput("scatterByVintage")
+                                  )
                           )
 
-##
+   ##
+                          # tabPanel('By Variety',  
+                          # 
+                          #     selectizeInput(
+                          #       "graph_variety",
+                          #       'Select a variety:', 
+                          #       choices = sort(unique(winelist_variety$variety)), 
+                          #       multiple = F
+                          #     ),
+                          # 
+                          #     fluidRow(
+                          #       infoBoxOutput("maxVarPrice"),
+                          #       infoBoxOutput("maxVarPoints")
+                          #     ),
+                          #     fluidRow(
+                          #       infoBoxOutput("meanVarPrice"),
+                          #       infoBoxOutput("meanVarPoints")
+                          #     ), 
+                          # 
+                          #     fluidRow(
+                          #       infoBoxOutput("minVarPrice"),
+                          #       infoBoxOutput("minVarPoints")
+                          #     ), 
+                          # 
+                          #     fluidRow(
+                          #       plotlyOutput("scatterByVariety")
+                          #     )
+                          # )
+
+###
+
+
+
                         
             )
     ),
