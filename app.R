@@ -1,3 +1,12 @@
+##
+## CETM46 Data Science Product Prototype
+## By Raymond Lai
+## 
+## Date: 12 Jan 2020
+##
+## Application: Wine Recommendation Platform
+##
+
 library(shiny)
 library(shinydashboard)
 library(dplyr)
@@ -14,6 +23,9 @@ library(jpeg)
 library(plotly)
 library(DT)
 
+##
+## Dataset import and ETL
+##
 
 wine1 <- as.data.frame(read.csv('winemag-data_first150k.csv'))
 wine2_raw <- as.data.frame(read.csv('winemag-data-130k-v2.csv'))
@@ -25,6 +37,11 @@ high_score <- 90
 winelist$description <- NULL
 winelist$high_rating <- as.factor(winelist$points > high_score)
 head(winelist, 5)
+
+##
+## Random Forest for classification
+##
+
 set.seed(100)
 indices = createDataPartition(winelist$high_rating, p = .2, list = F)
 training = winelist[-indices, ]
@@ -38,6 +55,9 @@ winelist_variety <- winelist_variety %>% filter(v_count > 1000)
 sort(unique(winelist_variety$variety))
 
 ##
+## ETL for extracting Vintage information from title
+##
+
 wine2_raw$title = as.character(wine2_raw$title)
 vintage_patt = "([1|2]{1}[0|9]{1}[0-9]{2})"
 y = str_extract_all(wine2_raw$title, pattern = vintage_patt, simplify = TRUE)
@@ -57,7 +77,8 @@ top_region = wine.new %>% na.omit() %>% group_by(region) %>% filter(vintage >= 1
 
 
 ##
-
+## Server portion of R Shiny dashboard
+##
 
 value = 0
 
@@ -136,15 +157,6 @@ server <- function(input, output) {
       plot.title=element_text(face='bold')) + theme(legend.position='none')
   })
   
-  ##
-  
-  ###
-  
-#  output$scatterByVintage <- renderPlotly({
-#    scatter_graph_Vintage <- winelist_variety %>% filter(vintage == input$graph_vintage) %>% arrange(desc(points)) %>% head(100) %>% 
-#      ggplot(aes(x = price, y = points)) + geom_point(aes(color = country), alpha = 0.4) +  xlab('Price per Bottle (in USD)')+ ylab('Points') + ggtitle('Price vs. Points: Selected Variety Top 100 Wines') + theme(
-#      plot.title=element_text(face='bold')) + theme(legend.position='none')
-#  })
   
   output$scatterByVintage <- renderPlotly({
     scatter_graph_Vintage <- wine.new %>% na.omit() %>% group_by(region) %>% filter(vintage == input$graph_vintage, region %in% unname(unlist(top_region))) %>%
@@ -202,13 +214,9 @@ server <- function(input, output) {
     endResult
   })
   
-#  sentence <- reactive({
-#    return(paste("This is : ",renderText({wpred()})))
-#  })
   
   output$myResult <- renderValueBox({
     valueBox(
-#      sentence(),
       renderText(wpred()),
       color = ifelse(wpred() == "GOOD","blue","red"),
       subtitle = "Recommendation",
@@ -217,6 +225,10 @@ server <- function(input, output) {
   })
   
 }
+
+##
+## R shiny dashboard Sidebar
+##
 
 sidebar <- dashboardSidebar(
   sidebarMenu(
@@ -229,6 +241,9 @@ sidebar <- dashboardSidebar(
   )
 )
 
+##
+## R Shiny Dashboard Body
+##
 
 body <- dashboardBody(
   tabItems(
@@ -333,40 +348,6 @@ body <- dashboardBody(
                                   )
                           )
 
-   ##
-                          # tabPanel('By Variety',  
-                          # 
-                          #     selectizeInput(
-                          #       "graph_variety",
-                          #       'Select a variety:', 
-                          #       choices = sort(unique(winelist_variety$variety)), 
-                          #       multiple = F
-                          #     ),
-                          # 
-                          #     fluidRow(
-                          #       infoBoxOutput("maxVarPrice"),
-                          #       infoBoxOutput("maxVarPoints")
-                          #     ),
-                          #     fluidRow(
-                          #       infoBoxOutput("meanVarPrice"),
-                          #       infoBoxOutput("meanVarPoints")
-                          #     ), 
-                          # 
-                          #     fluidRow(
-                          #       infoBoxOutput("minVarPrice"),
-                          #       infoBoxOutput("minVarPoints")
-                          #     ), 
-                          # 
-                          #     fluidRow(
-                          #       plotlyOutput("scatterByVariety")
-                          #     )
-                          # )
-
-###
-
-
-
-                        
             )
     ),
    # Third tabItem 
